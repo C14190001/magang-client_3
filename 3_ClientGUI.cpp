@@ -253,6 +253,7 @@ void setup() {
 
 	if (stoi(sqlQuery("SELECT `id` FROM `clients` WHERE `id` = " + to_string(clientID))) != clientID) {
 		remove("ClientID.txt");
+		clientID = NULL;
 		setup();
 	}
 }
