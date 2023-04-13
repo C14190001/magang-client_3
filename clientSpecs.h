@@ -41,11 +41,11 @@ string getWmiData(string inputQuery, string inputProperty) {
 		return "-1";
 	}
 
-	hres = CoInitializeSecurity(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL);
-	if (FAILED(hres)) {
-		CoUninitialize();
-		return "-1";
-	}
+	//hres = CoInitializeSecurity(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL);
+	//if (FAILED(hres)) {
+	//	CoUninitialize();
+	//	return "-1";
+	//}
 
 	IWbemLocator* pLoc = NULL;
 	hres = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&pLoc);

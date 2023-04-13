@@ -32,8 +32,6 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 MYSQL* conn; MYSQL_ROW row; MYSQL_RES* res;
 string query, logText, logS; int clientID, qState;
-string name = "N/A", cpu = "N/A", igpu = "N/A", egpu = "N/A", ip = "N/A", mac = "N/A";
-int ram = 0, hdd = 0;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -222,33 +220,6 @@ void setup() {
 	if (clientID == NULL) {
 		::MessageBox(hWnd, _T("Please set the Client ID first"), _T("Error"), MB_OK | MB_ICONHAND);
 		exit(0);
-		/*while (choice == -1) {
-			cout << "Is this an New or Existing PC? (0 for Existing PC. 1 for New PC)\nChoice: ";
-			cin >> choice; cin.get();
-			if (choice == 0) {
-				cout << "Input Client ID number: ";
-				cin >> clientID; cin.get();
-
-				if (stoi(sqlQuery("SELECT `id` FROM `clients` WHERE `id` = " + to_string(clientID))) == clientID) {}
-				else {
-					cout << "Client ID not found in the Database.\n";
-					choice = -1;
-				}
-			}
-			else if (choice == 1) {
-				sqlQuery("INSERT INTO `clients` (`id`, `updated?`) VALUES (NULL, '0')");
-				clientID = stoi(sqlQuery("SELECT `id` FROM `clients` ORDER BY `id` DESC LIMIT 1"));
-
-				sqlQuery("INSERT INTO `client_apps` (`id`, `apps`) VALUES ('" + to_string(clientID) + "', '" + getAllInstalledPrograms() + "')");
-				getAllSpecs(name, cpu, igpu, egpu, ram, hdd, ip, mac);
-				sqlQuery("INSERT INTO `client_specs` (`id`, `name`, `cpu`, `i-gpu`, `e-gpu`, `ram`, `memory`, `ip`, `mac`) VALUES ('" + to_string(clientID) + "', '" + name + "', '" + cpu + "', '" + igpu + "', '" + egpu + "', '" + to_string(ram) + "', '" + to_string(hdd) + "', '" + ip + "', '" + mac + "')");
-
-				sqlQuery("UPDATE `clients` SET `updated?` = '1' WHERE `clients`.`id` = " + to_string(clientID));
-			}
-		}
-		ofstream out("ClientID.txt");
-		out << clientID;
-		out.close();*/
 	}
 
 	if (stoi(sqlQuery("SELECT `id` FROM `clients` WHERE `id` = " + to_string(clientID))) != clientID) {
@@ -319,14 +290,33 @@ void waitForNewRequest() {
 	logTextFunction(logS);
 	while (1) {
 		uploadRemainingStatus();
-
-		//Upload Specs and Apps
+		//Upload / Insert Specs and Apps
 		if (stoi(sqlQuery("SELECT `updated?` FROM `clients` WHERE `id` = " + to_string(clientID))) == 0) {
-			logS = "Updating Specs and Apps...";
-			logTextFunction(logS);
-			sqlQuery("UPDATE `client_apps` SET `apps` = '" + getAllInstalledPrograms() + "' WHERE `client_apps`.`id` = " + to_string(clientID));
-			getAllSpecs(name, cpu, igpu, egpu, ram, hdd, ip, mac);
-			sqlQuery("UPDATE `client_specs` SET `name` = '" + name + "', `cpu` = '" + cpu + "', `i-gpu` = '" + igpu + "', `e-gpu` = '" + egpu + "', `ram` = '" + to_string(ram) + "', `memory` = '" + to_string(hdd) + "', `ip` = '" + ip + "', `mac` = '" + mac + "' WHERE `client_specs`.`id` = " + to_string(clientID));
+			//Apps
+			if(stoi(sqlQuery("SELECT `client_apps`.`id` FROM `client_apps` WHERE `client_apps`.`id` = "+ to_string(clientID))) == clientID){
+				logTextFunction("Updating Apps...");
+				sqlQuery("UPDATE `client_apps` SET `apps` = '" + getAllInstalledPrograms() + "' WHERE `client_apps`.`id` = " + to_string(clientID));
+			}
+			else {
+				logTextFunction("Inserting Apps...");
+				sqlQuery("INSERT INTO `client_apps` (`id`, `apps`) VALUES ('" + to_string(clientID) + "', '" + getAllInstalledPrograms() + "')");
+			}
+			
+			//Specs
+			string name = "N/A", cpu = "N/A", igpu = "N/A", egpu = "N/A", ip = "N/A", mac = "N/A";
+			int ram = 0, hdd = 0;
+			getAllSpecs(name, cpu, igpu, egpu, ram, hdd, ip, mac); 
+
+			if (stoi(sqlQuery("SELECT `client_specs`.`id` FROM `client_specs` WHERE `client_specs`.`id` = " + to_string(clientID))) == clientID) {
+				logTextFunction("Updating Specs...");
+				sqlQuery("UPDATE `client_specs` SET `name` = '" + name + "', `cpu` = '" + cpu + "', `i-gpu` = '" + igpu + "', `e-gpu` = '" + egpu + "', `ram` = '" + to_string(ram) + "', `memory` = '" + to_string(hdd) + "', `ip` = '" + ip + "', `mac` = '" + mac + "' WHERE `client_specs`.`id` = " + to_string(clientID));
+				}
+			else {
+				logTextFunction("Inserting Specs...");
+				sqlQuery("INSERT INTO `client_specs` (`id`, `name`, `cpu`, `i-gpu`, `e-gpu`, `ram`, `memory`, `ip`, `mac`) VALUES ('" + to_string(clientID) + "', '" + name + "', '" + cpu + "', '" + igpu + "', '" + egpu + "', '" + to_string(ram) + "', '" + to_string(hdd) + "', '" + ip + "', '" + mac + "')");
+			}
+
+			//Done
 			sqlQuery("UPDATE `clients` SET `updated?` = '1' WHERE `clients`.`id` = " + to_string(clientID));
 			logS = "Done updating.";
 			logTextFunction(logS);
@@ -472,7 +462,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             switch (wmId)
             {
             case IDM_ABOUT:
-				::MessageBox(hWnd, _T("Version 1.0"), _T("About"), MB_OK);
+				::MessageBox(hWnd, _T("Version 1.2"), _T("About"), MB_OK);
                 //DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
 			case IDM_EXIT: {
