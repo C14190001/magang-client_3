@@ -2,10 +2,10 @@
 D:\LEAP Magang\3_ClientGUI\clientSpecs.h(118): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
 D:\LEAP Magang\3_ClientGUI\clientSpecs.h(120,39): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 D:\LEAP Magang\3_ClientGUI\clientSpecs.h(140): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-D:\LEAP Magang\3_ClientGUI\3_ClientGUI.cpp(314,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+D:\LEAP Magang\3_ClientGUI\3_ClientGUI.cpp(286,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
   Generating code
-  3 of 421 functions ( 0.7%) were compiled, the rest were copied from previous compilation.
+  1 of 409 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+    6 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   3_ClientGUI.vcxproj -> D:\LEAP Magang\3_ClientGUI\x64\Release\3_ClientGUI.exe
