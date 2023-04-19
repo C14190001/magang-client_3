@@ -17,7 +17,7 @@
 using namespace std;
 
 //Config
-#define ServerIP "192.168.18.5"
+#define ServerIP "192.168.47.1"
 #define DbName "magang-database"
 #define DbUsername "client"
 #define DbPassword ""
@@ -39,8 +39,13 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-void logTextFunction(string text) {
-	logText += text + "\r\n";
+void logTextFunction(string text, bool newline = true) {
+	if (newline) {
+		logText += text + "\r\n";
+	}
+	else {
+		logText += text;
+	}
 	HWND hText = GetDlgItem(hWnd, IDC_LOGWINDOW);
 	SetWindowText(hText, wstring(logText.begin(), logText.end()).c_str());
 
@@ -269,18 +274,17 @@ void uploadRemainingStatus() {
 }
 void waitForNewRequest() {
 	//Starting up
-	logS = "Connecting to the Database...";
-	logTextFunction(logS);
+	logTextFunction("Connecting to the Database... (", false);
+	logTextFunction(ServerIP, false);
+	logTextFunction(")");
 	connectToDatabase();
 	setup();
 	uploadRemainingStatus();
 
-	logS = "------------------------------";
-	logTextFunction(logS);
+	logTextFunction("------------------------------");
 	logS = "[ Client ID: " + to_string(clientID) + " ]";
 	logTextFunction(logS);
-	logS = "------------------------------";
-	logTextFunction(logS);
+	logTextFunction("------------------------------");
 
 	//Check for requests
 	srand(time(0));
@@ -462,7 +466,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             switch (wmId)
             {
             case IDM_ABOUT:
-				::MessageBox(hWnd, _T("Version 1.2"), _T("About"), MB_OK);
+				::MessageBox(hWnd, _T("Version 1.3"), _T("About"), MB_OK);
                 //DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
 			case IDM_EXIT: {
