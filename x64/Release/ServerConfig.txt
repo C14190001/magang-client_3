@@ -1,0 +1,4 @@
+192.168.47.1
+3306
+magang-database
+client

@@ -14,15 +14,8 @@
 #include "framework.h"
 #include "backgroundTray.h"
 #include "3_ClientGUI.h"
+#include <regex>
 using namespace std;
-
-//Config
-#define ServerIP "192.168.47.1"
-#define DbName "magang-database"
-#define DbUsername "client"
-#define DbPassword ""
-#define DbPort 3306
-
 #define MAX_LOADSTRING 100
 
 // Global Variables:
@@ -32,6 +25,11 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 MYSQL* conn; MYSQL_ROW row; MYSQL_RES* res;
 string query, logText, logS; int clientID, qState;
+string ServerIP = "";
+string DbPort = "";
+string DbName = "";
+string DbUsername = "";
+string DbPassword = "";
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -106,14 +104,38 @@ string deleteLastRemainingStatus() {
 	return a;
 }
 void connectToDatabase() {
+	//Reading ServerConfig.txt
+	fstream SrvCfg("ServerConfig.txt");
+	if (!SrvCfg.is_open()) {
+		logTextFunction("ServerConfig.txt not found!");
+		::MessageBox(hWnd, _T("Cannot find ServerConfig.txt! Please make new one with these variables PER LINE: ServerIP, DbPort, DbName, DbUsername, DbPassword"), _T("Error"), MB_OK | MB_ICONHAND);
+		exit(0);
+	}
+	else {
+		getline(SrvCfg, ServerIP);
+		getline(SrvCfg, DbPort);
+		getline(SrvCfg, DbName);
+		getline(SrvCfg, DbUsername);
+		getline(SrvCfg, DbPassword);
+
+		if (ServerIP == "" || DbPort == "" || DbName == "" || DbUsername == "" || !regex_match(ServerIP, regex("^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"))) {
+			SrvCfg.close();
+			remove("ServerConfig.txt");
+			logTextFunction("Invalid ServerConfig.txt file.");
+			::MessageBox(hWnd, _T("Invalid ServerConfig.txt! Please make new one with these variables PER LINE: ServerIP, DbPort, DbName, DbUsername, DbPassword"), _T("Error"), MB_OK | MB_ICONHAND);
+			exit(0);
+		}
+	}
+	SrvCfg.close();
+
 	conn = mysql_init(0);
-	conn = mysql_real_connect(conn, ServerIP, DbUsername, DbPassword, DbName, DbPort, NULL, 0);
+	conn = mysql_real_connect(conn, ServerIP.c_str(), DbUsername.c_str(), DbPassword.c_str(), DbName.c_str(), stoi(DbPort), NULL, 0);
 	while (!conn) {
 		logS = "Error connecting to Database, Reconnecting...";
 		logTextFunction(logS);
 
 		conn = mysql_init(0);
-		conn = mysql_real_connect(conn, ServerIP, DbUsername, DbPassword, DbName, DbPort, NULL, 0);
+		conn = mysql_real_connect(conn, ServerIP.c_str(), DbUsername.c_str(), DbPassword.c_str(), DbName.c_str(), stoi(DbPort), NULL, 0);
 		Sleep(3000);
 	}
 	logS = "Connected to Database!";
@@ -149,10 +171,10 @@ string sqlQuery(string query) {
 
 		do {
 			conn = mysql_init(0);
-			conn = mysql_real_connect(conn, ServerIP, DbUsername, DbPassword, DbName, DbPort, NULL, 0);
+			conn = mysql_real_connect(conn, ServerIP.c_str(), DbUsername.c_str(), DbPassword.c_str(), DbName.c_str(), stoi(DbPort), NULL, 0);
 			while (!conn) {
 				conn = mysql_init(0);
-				conn = mysql_real_connect(conn, ServerIP, DbUsername, DbPassword, DbName, DbPort, NULL, 0);
+				conn = mysql_real_connect(conn, ServerIP.c_str(), DbUsername.c_str(), DbPassword.c_str(), DbName.c_str(), stoi(DbPort), NULL, 0);
 
 				logS = "Error connecting to Database, Reconnecting...";
 				logTextFunction(logS);
@@ -216,7 +238,7 @@ void setup() {
 	int choice = -1;
 	fstream in("ClientID.txt", fstream::in);
 	if (in.is_open()) { in >> clientID; }
-	else { 
+	else {
 		logS = "ClientID.txt not found";
 		logTextFunction(logS);
 	}
@@ -274,9 +296,7 @@ void uploadRemainingStatus() {
 }
 void waitForNewRequest() {
 	//Starting up
-	logTextFunction("Connecting to the Database... (", false);
-	logTextFunction(ServerIP, false);
-	logTextFunction(")");
+	logTextFunction("Connecting to the Database...");
 	connectToDatabase();
 	setup();
 	uploadRemainingStatus();
@@ -297,7 +317,7 @@ void waitForNewRequest() {
 		//Upload / Insert Specs and Apps
 		if (stoi(sqlQuery("SELECT `updated?` FROM `clients` WHERE `id` = " + to_string(clientID))) == 0) {
 			//Apps
-			if(stoi(sqlQuery("SELECT `client_apps`.`id` FROM `client_apps` WHERE `client_apps`.`id` = "+ to_string(clientID))) == clientID){
+			if (stoi(sqlQuery("SELECT `client_apps`.`id` FROM `client_apps` WHERE `client_apps`.`id` = " + to_string(clientID))) == clientID) {
 				logTextFunction("Updating Apps...");
 				sqlQuery("UPDATE `client_apps` SET `apps` = '" + getAllInstalledPrograms() + "' WHERE `client_apps`.`id` = " + to_string(clientID));
 			}
@@ -305,16 +325,16 @@ void waitForNewRequest() {
 				logTextFunction("Inserting Apps...");
 				sqlQuery("INSERT INTO `client_apps` (`id`, `apps`) VALUES ('" + to_string(clientID) + "', '" + getAllInstalledPrograms() + "')");
 			}
-			
+
 			//Specs
 			string name = "N/A", cpu = "N/A", igpu = "N/A", egpu = "N/A", ip = "N/A", mac = "N/A";
 			int ram = 0, hdd = 0;
-			getAllSpecs(name, cpu, igpu, egpu, ram, hdd, ip, mac); 
+			getAllSpecs(name, cpu, igpu, egpu, ram, hdd, ip, mac);
 
 			if (stoi(sqlQuery("SELECT `client_specs`.`id` FROM `client_specs` WHERE `client_specs`.`id` = " + to_string(clientID))) == clientID) {
 				logTextFunction("Updating Specs...");
 				sqlQuery("UPDATE `client_specs` SET `name` = '" + name + "', `cpu` = '" + cpu + "', `i-gpu` = '" + igpu + "', `e-gpu` = '" + egpu + "', `ram` = '" + to_string(ram) + "', `memory` = '" + to_string(hdd) + "', `ip` = '" + ip + "', `mac` = '" + mac + "' WHERE `client_specs`.`id` = " + to_string(clientID));
-				}
+			}
 			else {
 				logTextFunction("Inserting Specs...");
 				sqlQuery("INSERT INTO `client_specs` (`id`, `name`, `cpu`, `i-gpu`, `e-gpu`, `ram`, `memory`, `ip`, `mac`) VALUES ('" + to_string(clientID) + "', '" + name + "', '" + cpu + "', '" + igpu + "', '" + egpu + "', '" + to_string(ram) + "', '" + to_string(hdd) + "', '" + ip + "', '" + mac + "')");
@@ -332,43 +352,43 @@ void waitForNewRequest() {
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR    lpCmdLine,
+	_In_ int       nCmdShow)
 {
-    UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: Place code here.
+	// TODO: Place code here.
 
-    // Initialize global strings
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_MY3CLIENTGUI, szWindowClass, MAX_LOADSTRING);
-    MyRegisterClass(hInstance);
+	// Initialize global strings
+	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+	LoadStringW(hInstance, IDC_MY3CLIENTGUI, szWindowClass, MAX_LOADSTRING);
+	MyRegisterClass(hInstance);
 
-    // Perform application initialization:
-    if (!InitInstance (hInstance, nCmdShow))
-    {
-        return FALSE;
-    }
+	// Perform application initialization:
+	if (!InitInstance(hInstance, nCmdShow))
+	{
+		return FALSE;
+	}
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY3CLIENTGUI));
+	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY3CLIENTGUI));
 
-    MSG msg;
+	MSG msg;
 
-    // Main message loop:
+	// Main message loop:
 	insertRemainingStatus("ON");
 	thread clientProgram(waitForNewRequest);
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-    }
+	while (GetMessage(&msg, nullptr, 0, 0))
+	{
+		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
 
-    return (int) msg.wParam;
+	return (int)msg.wParam;
 }
 
 
@@ -380,23 +400,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
-    WNDCLASSEXW wcex;
+	WNDCLASSEXW wcex;
 
-    wcex.cbSize = sizeof(WNDCLASSEX);
+	wcex.cbSize = sizeof(WNDCLASSEX);
 
-    wcex.style          = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
-    wcex.cbClsExtra     = 0;
-    wcex.cbWndExtra     = 0;
-    wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY3CLIENTGUI));
-    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_MY3CLIENTGUI);
-    wcex.lpszClassName  = szWindowClass;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.style = CS_HREDRAW | CS_VREDRAW;
+	wcex.lpfnWndProc = WndProc;
+	wcex.cbClsExtra = 0;
+	wcex.cbWndExtra = 0;
+	wcex.hInstance = hInstance;
+	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY3CLIENTGUI));
+	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MY3CLIENTGUI);
+	wcex.lpszClassName = szWindowClass;
+	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
-    return RegisterClassExW(&wcex);
+	return RegisterClassExW(&wcex);
 }
 
 //
@@ -411,23 +431,23 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   hInst = hInstance; // Store instance handle in our global variable
+	hInst = hInstance; // Store instance handle in our global variable
 
-   hWnd = CreateWindowW(szWindowClass, szTitle, WS_SYSMENU,
-      0, 0, 300, 200, nullptr, nullptr, hInstance, nullptr);
+	hWnd = CreateWindowW(szWindowClass, szTitle, WS_SYSMENU,
+		0, 0, 300, 200, nullptr, nullptr, hInstance, nullptr);
 
-   if (!hWnd)
-   {
-      return FALSE;
-   }
+	if (!hWnd)
+	{
+		return FALSE;
+	}
 
-   HWND logWindow = CreateWindow(L"Edit", L"", WS_CHILD | WS_VISIBLE | ES_READONLY | ES_AUTOVSCROLL | ES_MULTILINE | WS_VSCROLL, 0, 0, 280, 135, hWnd, (HMENU)IDC_LOGWINDOW, NULL, NULL);
+	HWND logWindow = CreateWindow(L"Edit", L"", WS_CHILD | WS_VISIBLE | ES_READONLY | ES_AUTOVSCROLL | ES_MULTILINE | WS_VSCROLL, 0, 0, 280, 135, hWnd, (HMENU)IDC_LOGWINDOW, NULL, NULL);
 
-   //ShowWindow(hWnd, nCmdShow);
-   TrayDrawIcon(hWnd);
-   UpdateWindow(hWnd);
+	//ShowWindow(hWnd, nCmdShow);
+	TrayDrawIcon(hWnd);
+	UpdateWindow(hWnd);
 
-   return TRUE;
+	return TRUE;
 }
 
 //
@@ -442,8 +462,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    switch (message)
-    {
+	switch (message)
+	{
 	case WM_ENDSESSION: {
 		insertRemainingStatus("OFF");
 
@@ -458,86 +478,86 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		Sleep(3000);
 		return 0;
 	}
-	break;
-    case WM_COMMAND:
-        {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-				::MessageBox(hWnd, _T("Version 1.3"), _T("About"), MB_OK);
-                //DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-			case IDM_EXIT: {
-				int iMessage = ::MessageBox(hWnd, _T("Are you sure?"), _T("Exit"), MB_YESNO | MB_ICONQUESTION);
-				switch (iMessage) {
-				case IDYES: {
-					//DestroyWindow(hWnd);
-					exit(0);
-					break;
-				}
-				default:
-					break;
-				}
+					  break;
+	case WM_COMMAND:
+	{
+		int wmId = LOWORD(wParam);
+		// Parse the menu selections:
+		switch (wmId)
+		{
+		case IDM_ABOUT:
+			::MessageBox(hWnd, _T("Version 1.4"), _T("About"), MB_OK);
+			//DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_EXIT: {
+			int iMessage = ::MessageBox(hWnd, _T("Are you sure?"), _T("Exit"), MB_YESNO | MB_ICONQUESTION);
+			switch (iMessage) {
+			case IDYES: {
+				//DestroyWindow(hWnd);
+				exit(0);
 				break;
 			}
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
-        }
-    break;
-    case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
-            EndPaint(hWnd, &ps);
-        }
-        break;
+			default:
+				break;
+			}
+			break;
+		}
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+	}
+	break;
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hWnd, &ps);
+		// TODO: Add any drawing code that uses hdc here...
+		EndPaint(hWnd, &ps);
+	}
+	break;
 
-    //( Sembunyikan ke Tray )
-    case WM_CLOSE:
-        TrayDrawIcon(hWnd);
-        ShowWindow(hWnd, SW_HIDE);
-        break;
-    //( Munculkan ketika Tray di-klik )
-    case WM_TRAYMESSAGE:
-        switch (lParam) {
-        case WM_LBUTTONDOWN:
-            ShowWindow(hWnd, SW_SHOW);
-            TrayDeleteIcon(hWnd);
-            break;
-        default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
-        }
-        break;
+	//( Sembunyikan ke Tray )
+	case WM_CLOSE:
+		TrayDrawIcon(hWnd);
+		ShowWindow(hWnd, SW_HIDE);
+		break;
+		//( Munculkan ketika Tray di-klik )
+	case WM_TRAYMESSAGE:
+		switch (lParam) {
+		case WM_LBUTTONDOWN:
+			ShowWindow(hWnd, SW_SHOW);
+			TrayDeleteIcon(hWnd);
+			break;
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+		break;
 
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
-    default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
-    }
-    return 0;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return 0;
 }
 
 // Message handler for about box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
 
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
-    }
-    return (INT_PTR)FALSE;
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
 }
