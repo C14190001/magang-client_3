@@ -148,99 +148,6 @@ string getAllMacAddress() {
 	return line2;
 }
 
-void viewAllSpecs() {
-	string substring = "";
-	bool igpu = false; int b = 0; double c = 0;
-	//PC Name
-	substring = getWmiData("SELECT * FROM Win32_ComputerSystem", "Name");
-	for (int i = 0; i < substring.length(); i++) {
-		if (substring[i] == '/') {
-			cout << "PC Name: " << substring.substr(0, i) << endl;
-			break;
-		}
-	}
-	//CPU
-	substring = getWmiData("SELECT * FROM Win32_Processor", "Name");
-	for (int i = 0; i < substring.length(); i++) {
-		if (substring[i] == '/') {
-			cout << "CPU: " << substring.substr(0, i) << endl;
-			break;
-		}
-	}
-	//GPU
-	substring = getWmiData("SELECT * FROM Win32_VideoController", "Name");
-	for (int i = 0; i < substring.length(); i++) {
-		if (!igpu) {
-			if (substring[i] == '/') {
-				if (i == substring.length() - 1) {
-					cout << "Intergrated GPU: " << substring.substr(b, i - b) << endl;
-					break;
-				}
-				else {
-					cout << "Dedicated GPU: " << substring.substr(0, i) << endl;
-					b = i;
-					igpu = true;
-				}
-			}
-		}
-		else {
-			if (substring[i] == '/') {
-				cout << "Intergrated GPU: " << substring.substr(b + 1, i - 1 - b) << endl;
-				break;
-			}
-		}
-	}
-	//RAM
-	substring = getWmiData("SELECT * FROM Win32_PhysicalMemory", "Capacity");
-	b = 0;
-	for (int i = 0; i < substring.length(); i++) {
-		if (substring[i] == '/') {
-			c += stod(substring.substr(b, i));
-			b = i + 1;
-		}
-	}
-	cout << "RAM: " << int(c / 1073741824) << " GB\n";
-	//HDD
-	substring = getWmiData("SELECT * FROM Win32_DiskDrive", "Size");
-	b = 0; c = 0;
-	for (int i = 0; i < substring.length(); i++) {
-		if (substring[i] == '/') {
-			c += stod(substring.substr(b, i));
-			b = i + 1;
-		}
-	}
-	cout << "HDD: " << int(c / 1073741824) << " GB\n";
-
-	//IP Address
-	cout << "IP Address: ";
-	substring = getAllIpAddress();
-	b = 0;
-	for (int i = 0; i < substring.length(); i++) {
-		if (substring[i] == '/') {
-			cout << substring.substr(b, i - b);
-			b = i + 1;
-			if (i < substring.length() - 1) {
-				cout << ", ";
-			}
-		}
-	}
-	cout << "\n";
-
-	//MAC Address
-	cout << "MAC Address: ";
-	substring = getAllMacAddress();
-	b = 0;
-	for (int i = 0; i < substring.length(); i++) {
-		if (substring[i] == '/') {
-			cout << substring.substr(b, i - b);
-			b = i + 1;
-			if (i < substring.length() - 1) {
-				cout << ", ";
-			}
-		}
-	}
-	cout << "\n";
-}
 void getAllSpecs(string& name, string& cpu, string& igpu, string& egpu, int& ram, int& hdd, string& ip, string& mac) {
 	string substring = "";
 	bool twoGpu = false; int b = 0; double c = 0;
@@ -285,7 +192,7 @@ void getAllSpecs(string& name, string& cpu, string& igpu, string& egpu, int& ram
 		}
 	}
 	//RAM
-	substring = getWmiData("SELECT * FROM Win32_PhysicalMemory", "Capacity");
+	substring = getWmiData("SELECT * FROM Win32_ComputerSystem", "TotalPhysicalMemory");
 	b = 0;
 	for (int i = 0; i < substring.length(); i++) {
 		if (substring[i] == '/') {
@@ -293,7 +200,7 @@ void getAllSpecs(string& name, string& cpu, string& igpu, string& egpu, int& ram
 			b = i + 1;
 		}
 	}
-	ram = int(c / 1073741824);
+	ram = round((c / 1073270784));
 	//HDD
 	substring = getWmiData("SELECT * FROM Win32_DiskDrive", "Size");
 	b = 0; c = 0;
@@ -303,7 +210,7 @@ void getAllSpecs(string& name, string& cpu, string& igpu, string& egpu, int& ram
 			b = i + 1;
 		}
 	}
-	hdd = int(c / 1073741824);
+	hdd = round((c / 1073270784));
 	//IP Address
 	ip = getAllIpAddress();
 

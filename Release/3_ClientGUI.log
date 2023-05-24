@@ -1,0 +1,19 @@
+﻿  3_ClientGUI.cpp
+D:\LEAP Magang\1_ClientGUI\clientSpecs.h(157,20): warning C4018: '<': signed/unsigned mismatch
+D:\LEAP Magang\1_ClientGUI\clientSpecs.h(165,20): warning C4018: '<': signed/unsigned mismatch
+D:\LEAP Magang\1_ClientGUI\clientSpecs.h(173,20): warning C4018: '<': signed/unsigned mismatch
+D:\LEAP Magang\1_ClientGUI\clientSpecs.h(197,20): warning C4018: '<': signed/unsigned mismatch
+D:\LEAP Magang\1_ClientGUI\clientSpecs.h(203,13): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\LEAP Magang\1_ClientGUI\clientSpecs.h(207,20): warning C4018: '<': signed/unsigned mismatch
+D:\LEAP Magang\1_ClientGUI\clientSpecs.h(213,13): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\LEAP Magang\1_ClientGUI\3_ClientGUI.cpp(87,20): warning C4018: '<': signed/unsigned mismatch
+D:\LEAP Magang\1_ClientGUI\3_ClientGUI.cpp(121,106): warning C4129: '.': unrecognized character escape sequence
+D:\LEAP Magang\1_ClientGUI\3_ClientGUI.cpp(192,22): warning C4018: '<': signed/unsigned mismatch
+D:\LEAP Magang\1_ClientGUI\3_ClientGUI.cpp(278,21): warning C4018: '<': signed/unsigned mismatch
+D:\LEAP Magang\1_ClientGUI\3_ClientGUI.cpp(310,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  Generating code
+  18 of 1047 functions ( 1.7%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    68 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  3_ClientGUI.vcxproj -> D:\LEAP Magang\1_ClientGUI\Release\3_ClientGUI.exe

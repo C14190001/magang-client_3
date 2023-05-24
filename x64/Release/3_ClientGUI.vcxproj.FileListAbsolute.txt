@@ -1,1 +1,2 @@
 D:\LEAP Magang\3_ClientGUI\x64\Release\3_ClientGUI.exe
+D:\LEAP Magang\1_ClientGUI\x64\Release\3_ClientGUI.exe
